@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+#
+# Late
+
+# Check the 3rd party folder and install any daemontools services. We simply check for
+# the serivce and log run files.
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+readonly THIRD_PARTY_FOLDER='/data/3rd-party'
+
+cd "${THIRD_PARTY_FOLDER}" || exit 2
+for SERVICE_NAME in *
+    do
+
+        # Do we have what looks like a daemontools folder structure ?
+        if [[ -f "${THIRD_PARTY_FOLDER}/${SERVICE_NAME}/service/run" ]] && 
+           [[ -f "${THIRD_PARTY_FOLDER}/${SERVICE_NAME}/service/log/run" ]]; then
+
+            if [[ ! -L "/service/${SERVICE_NAME}" ]]; then
+
+                # Service is not installed. Assume we just upgraded and reinstall it.
+                ln -s "${THIRD_PARTY_FOLDER}/${SERVICE_NAME}/service" "/service/${SERVICE_NAME}"
+
+                # By default we respect the last state. Uncomment to always start the service.
+                #svc -u "/service/${SERVICE_NAME}"
+
+           fi
+       fi
+
+    done
+
+
+
+
+# Fin.
+
