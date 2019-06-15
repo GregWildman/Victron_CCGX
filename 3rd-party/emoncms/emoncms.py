@@ -1,14 +1,14 @@
 #!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 
-import dbus
-import os
-import sys
-from time import time, sleep
 from dbus.mainloop.glib import DBusGMainLoop
+import dbus
+import gobject
+import sys
+import os
+from time import time, sleep
 import urllib2, httplib
 import ConfigParser
-import pprint
 
 # Victron packages
 AppDir = os.path.dirname(os.path.realpath(__file__))               
@@ -34,24 +34,27 @@ interval = float(Emoncms['interval'])
 DBusGMainLoop(set_as_default=True)
 dbusConn = dbus.SystemBus()
 
+# Create the dictionary will all the VeDbusItemImport objects.
+print "Building objects dictionary"
+EmoncmsObjects = {}
+for bus_key in DbusObjectPath.keys():
+
+    bus_key_config = dict(config.items(bus_key))
+    for key, value in bus_key_config.items():
+        EmoncmsObjects[key] = VeDbusItemImport(dbusConn, DbusObjectPath[bus_key], value)
+
+# Loop
+print "Loop start"
 while (dbusConn):
 
-    EmoncmsInputs = {}
-    for bus_key in DbusObjectPath.keys():
-
-        bus_key_config = dict(config.items(bus_key))
-        for key, value in bus_key_config.items():
-            try:
-                result = VeDbusItemImport(dbusConn, DbusObjectPath[bus_key], value)
-                EmoncmsInputs[key] = 0 if result is None else result.get_value()
-            except Exception, ex:
-                print "Exception: %s" % ex
-                EmoncmsInputs[key] = 0
+    EmoncmsValues = {}
+    for key, o in EmoncmsObjects.items():
+            EmoncmsValues[key] = o.get_value()
 
     # Prepare data for POST
     data = "apikey=%s&node=%s&time=%s&data={%s}" % (
         Emoncms['apikey'], Emoncms['node'], time(),
-        ','.join(['%s:%s' % kv for kv in EmoncmsInputs.items()]) )
+        ','.join(['%s:%s' % kv for kv in EmoncmsValues.items()]) )
 
     try:
         req = urllib2.Request(EmoncmsURL, headers={ 'User-Agent': UserAgent })
