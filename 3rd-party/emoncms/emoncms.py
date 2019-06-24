@@ -9,13 +9,14 @@ import os
 from time import time, sleep
 import urllib2, httplib
 import ConfigParser
+import pprint
 
 # Victron packages
 AppDir = os.path.dirname(os.path.realpath(__file__))               
 sys.path.insert(1, os.path.join(AppDir, 'ext', 'velib_python'))
 from vedbus import VeDbusItemImport
 
-SoftwareVersion = "1.02"
+SoftwareVersion = "1.12"
 ConfigFile = "%s/emoncms.conf" % AppDir
 UserAgent = "CCGX-Emoncms/%s" % SoftwareVersion
 
@@ -43,6 +44,8 @@ for bus_key in DbusObjectPath.keys():
     for key, value in bus_key_config.items():
         EmoncmsObjects[key] = VeDbusItemImport(dbusConn, DbusObjectPath[bus_key], value)
 
+print "Done. Object size = %d bytes." % sys.getsizeof(EmoncmsObjects)
+
 # Loop
 print "Loop start"
 while (dbusConn):
@@ -69,10 +72,7 @@ while (dbusConn):
         import traceback
         print "Couldn't send to server, Exception: " +  traceback.format_exc()
     else:
-        if "ok" in result:
-            print "Send ok"
-        else:
-            print "Send failure"
+        print "Send %d bytes, %s" % (len(data), result)
 
 
     sleep(interval)
